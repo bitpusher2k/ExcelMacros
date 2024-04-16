@@ -53,7 +53,7 @@ Screenshot of customized Excel ribbon buttons:
 ![Ribbon](Ribbon.png)
 
 
-Can also place an already created copy of PERSONAL.XLSB into %appdata%\Microsoft\Excel\XLSTART - although you should not trust random precompiled macros you find on the internet.
+Can also place an the already created copy of PERSONAL.XLSB into %appdata%\Microsoft\Excel\XLSTART - although you should not trust strange precompiled macros you find on the internet.
 If PERSONAL.XLSB does not load or becomes corrupted delete it from %appdata%\Microsoft\Excel\XLSTART and recreate. 
 If PERSONAL.XLSB cannot be loaded from default location a custom location can be defined in "Options" > "Advanced" > "General" > "At startup, open all files in:"
 
