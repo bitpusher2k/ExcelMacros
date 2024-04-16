@@ -45,8 +45,10 @@ Add desired macros as buttons to the ribbon:
 * Select desired macros and arrange in group list.
 * Rename & select desired icon for each macro-button.
 
+![Customize](Customize.png)
 ![Customize](.\Customize.png)
 
+![Ribbon](Ribbon.png)
 ![Ribbon](.\Ribbon.png)
 
 
