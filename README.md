@@ -45,11 +45,12 @@ Add desired macros as buttons to the ribbon:
 * Select desired macros and arrange in group list.
 * Rename & select desired icon for each macro-button.
 
-![Customize](Customize.png)
-![Customize](.\Customize.png)
 
+Screenshot of customization pane:
+![Customize](Customize.png)
+
+Screenshot of customized Excel ribbon buttons:
 ![Ribbon](Ribbon.png)
-![Ribbon](.\Ribbon.png)
 
 
 Can also place an already created copy of PERSONAL.XLSB into %appdata%\Microsoft\Excel\XLSTART - although you should not trust random precompiled macros you find on the internet.
