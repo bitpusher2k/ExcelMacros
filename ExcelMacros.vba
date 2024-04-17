@@ -149,7 +149,7 @@ Sub HighlightRowsWithSelectedValue()
     Dim rCell As Range
     If ActiveCell.Value = vbNullString Then Exit Sub
     Set rCell = ActiveCell
-    If ActiveSheet.AutoFilterMode Then ActiveSheet.ShowAllData
+    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
     Do
         Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
         If rCell.Address <> ActiveCell.Address Then
@@ -180,7 +180,7 @@ Sub HighlightRowsWithSelectedValueRed()
     Dim rCell As Range
     If ActiveCell.Value = vbNullString Then Exit Sub
     Set rCell = ActiveCell
-    If ActiveSheet.AutoFilterMode Then ActiveSheet.ShowAllData
+    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
     Do
         Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
         If rCell.Address <> ActiveCell.Address Then
@@ -200,7 +200,7 @@ Sub HighlightRowsWithSelectedValueGreen()
     Dim rCell As Range
     If ActiveCell.Value = vbNullString Then Exit Sub
     Set rCell = ActiveCell
-    If ActiveSheet.AutoFilterMode Then ActiveSheet.ShowAllData
+    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
     Do
         Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
         If rCell.Address <> ActiveCell.Address Then
