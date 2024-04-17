@@ -9,7 +9,7 @@
 ' https://github.com/bitpusher2k
 '
 ' ExcelMacros.vba - By Bitpusher/The Digital Fox
-' v1.3 last updated 2024-04-14
+' v1.2 last updated 2024-03-30
 ' Simple Excel macro set.
 '
 ' Usage:
@@ -42,7 +42,7 @@
 ' Profit!
 '
 ' Can also place an already created copy of PERSONAL.XLSB into %appdata%\Microsoft\Excel\XLSTART.
-' If PERSONAL.XLSB does not load or becomes corrupted delete it from %appdata%\Microsoft\Excel\XLSTART and recreate.
+' If PERSONAL.XLSB does not load or becomes corrupted delete it from %appdata%\Microsoft\Excel\XLSTART and recreate. 
 ' If PERSONAL.XLSB cannot be loaded from default location a custom location can be defined in "Options" > "Advanced" > "General" > "At startup, open all files in:"
 '
 ' #excel #vba #macro #useful #toolbar #ribbon #autofit #row #column #filter #guid #highlight #selected #blankiferror #formula #value #duplicate #xlsx #pdf
@@ -135,7 +135,7 @@ Sub HideGuidColumns()
     Set regex = New RegExp
     regex.Global = True
     regex.IgnoreCase = True
-    regex.Pattern = "^({|\()?[A-Fa-f0-9]{8}-([A-Fa-f0-9]{4}-){3}[A-Fa-f0-9]{12}(}|\))?$"
+    regex.pattern = "^({|\()?[A-Fa-f0-9]{8}-([A-Fa-f0-9]{4}-){3}[A-Fa-f0-9]{12}(}|\))?$"
     For Each cell In ActiveWorkbook.ActiveSheet.Rows("2").Cells
         If regex.Test(cell.Value) Then
             cell.EntireColumn.Hidden = True
@@ -149,7 +149,6 @@ Sub HighlightRowsWithSelectedValue()
     Dim rCell As Range
     If ActiveCell.Value = vbNullString Then Exit Sub
     Set rCell = ActiveCell
-    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
     Do
         Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
         If rCell.Address <> ActiveCell.Address Then
@@ -169,46 +168,6 @@ Sub HighlightRowsWithSelectedValue()
         Else
             rCell.EntireRow.Interior.Color = 7071982 ' rgbPaleGoldenrod/7071982/Pale Goldenrod
             rCell.Interior.Color = 65535 ' rgbYellow/65535/Yellow
-            Exit Do
-        End If
-    Loop
-End Sub
-
-
-Sub HighlightRowsWithSelectedValueRed()
-' HighlightRowsWithSelectedValue Macro - Highlights all lines that have a cell which contains the selected value
-    Dim rCell As Range
-    If ActiveCell.Value = vbNullString Then Exit Sub
-    Set rCell = ActiveCell
-    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
-    Do
-        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
-        If rCell.Address <> ActiveCell.Address Then
-            rCell.EntireRow.Interior.Color = 13353215 ' rgbPink/13353215/Pink
-            rCell.Interior.Color = 9662683 ' rgbPaleVioletRed/9662683/Pale Violet Red
-        Else
-            rCell.EntireRow.Interior.Color = 13353215
-            rCell.Interior.Color = 9662683
-            Exit Do
-        End If
-    Loop
-End Sub
-
-
-Sub HighlightRowsWithSelectedValueGreen()
-' HighlightRowsWithSelectedValue Macro - Highlights all lines that have a cell which contains the selected value
-    Dim rCell As Range
-    If ActiveCell.Value = vbNullString Then Exit Sub
-    Set rCell = ActiveCell
-    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
-    Do
-        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
-        If rCell.Address <> ActiveCell.Address Then
-            rCell.EntireRow.Interior.Color = 10025880 ' rgbPaleGreen/10025880/Pale Green
-            rCell.Interior.Color = 15658671 ' rgbPaleTurquoise/15658671/Pale Turquoise
-        Else
-            rCell.EntireRow.Interior.Color = 10025880
-            rCell.Interior.Color = 15658671
             Exit Do
         End If
     Loop
@@ -333,9 +292,9 @@ Sub SaveWorkshetAsPDF()
           & myFile
     End If
 
-exitHandler:
+    exitHandler:
         Exit Sub
-errHandler:
+    errHandler:
         MsgBox "Could not create PDF file"
         Resume exitHandler
 End Sub
@@ -360,7 +319,11 @@ End Sub
 
 Sub ClearAllHighlighting()
 ' ClearAllHighlighting Macro - Clears all highlighting
-    Rows.EntireRow.Interior.Color = xlNone
+    Dim rng As Range
+    For Each rng In ActiveSheet.UsedRange
+        rng.Interior.ColorIndex = xlNone
+        rng.EntireRow.Interior.Color = xlNone
+    Next rng
 End Sub
 
 
@@ -369,6 +332,4 @@ Sub UnhideAllRowsColumns()
     Columns.EntireColumn.Hidden = False
     Rows.EntireRow.Hidden = False
 End Sub
-
-
 
