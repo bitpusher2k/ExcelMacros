@@ -353,7 +353,7 @@ Sub SaveWorksheetAsXLSX()
     BaseFileName = Join(FileNameArray, ".")
     ActiveFilePath = ActiveWorkbook.Path
     NewFullPath = ActiveFilePath & "\" & BaseFileName & ".xlsx"
-    MsgBox NewFullPath
+    'MsgBox NewFullPath
     ActiveWorkbook.SaveAs Filename:=NewFullPath, FileFormat:=51
 End Sub
 
@@ -371,4 +371,39 @@ Sub UnhideAllRowsColumns()
 End Sub
 
 
+Public Sub SplitDateAndTimeToNewColumns()
+    Dim MyDateTime As Date
+    Dim SelectedColumn As Range
+    Dim LastRow As Long
+    Dim i As Long
 
+    ' Check if a column is selected
+    On Error Resume Next
+    Set SelectedColumn = Selection.EntireColumn
+    On Error GoTo 0
+
+    If SelectedColumn Is Nothing Then
+        MsgBox "Please select a column containing date and time data.", vbExclamation, "Error"
+        Exit Sub
+    End If
+
+    ' Find the last row in the selected column
+    LastRow = Cells(Rows.Count, SelectedColumn.Column).End(xlUp).row
+
+    ' Insert new columns to the right
+    SelectedColumn.Offset(, 1).Insert Shift:=xlToRight
+    SelectedColumn.Offset(, 2).Insert Shift:=xlToRight
+
+    ' Loop through each row (skip header row)
+    For i = 2 To LastRow
+        MyDateTime = SelectedColumn.Cells(i, 1).Value
+
+        ' Extract date and time
+        SelectedColumn.Cells(i, 2).Value = Int(MyDateTime) ' Date
+        SelectedColumn.Cells(i, 3).Value = MyDateTime - Int(MyDateTime) ' Time
+
+        ' Format the new columns
+        SelectedColumn.Cells(i, 2).NumberFormat = "YYYY-MM-DD"
+        SelectedColumn.Cells(i, 3).NumberFormat = "hh:mm:ss"
+    Next i
+End Sub
