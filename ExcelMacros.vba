@@ -9,7 +9,7 @@
 ' https://github.com/bitpusher2k
 '
 ' ExcelMacros.vba - By Bitpusher/The Digital Fox
-' v1.3 last updated 2024-04-14
+' v1.4 last updated 2025-02-12
 ' Simple Excel macro set.
 '
 ' Usage:
@@ -369,6 +369,38 @@ Sub UnhideAllRowsColumns()
     Columns.EntireColumn.Hidden = False
     Rows.EntireRow.Hidden = False
 End Sub
+
+
+Sub CustomSort()
+' CustomSort Macro - Starts the custom sort dialog (save a couple clicks)
+    Application.CommandBars.ExecuteMso "SortCustomExcel"
+End Sub
+
+
+Sub DeleteHiddenColumns()
+' DeleteHiddenColumns Macro - Deletes all hidden columns
+    Dim Sheet As Worksheet
+    Dim LastCol As Integer
+    Set Sheet = ActiveSheet
+    LastCol = Sheet.UsedRange.Columns(Sheet.UsedRange.Columns.Count).Column
+    For i = LastCol To 1 Step -1
+    If Columns(i).Hidden = True Then Columns(i).EntireColumn.Delete
+    Next
+End Sub
+
+
+Sub DeleteHiddenRows()
+' DeleteHiddenRows Macro - Deletes all hidden rows
+    Dim Sheet As Worksheet
+    Dim LastRow As Integer
+    Set Sheet = ActiveSheet
+    LastRow = Sheet.UsedRange.Rows(Sheet.UsedRange.Rows.Count).Row
+    For i = LastRow To 1 Step -1
+    If Rows(i).Hidden = True Then Rows(i).EntireRow.Delete
+    Next
+End Sub
+
+
 
 
 Public Sub SplitDateAndTimeToNewColumns()
