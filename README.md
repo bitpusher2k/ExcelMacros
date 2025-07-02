@@ -14,7 +14,7 @@ https://github.com/bitpusher2k
 
 ## Simple Excel macro set.
 
-## Useful for manual processing of CSV log files. Currently includes 14 macros.
+## Useful for manual processing of CSV log files. Currently includes 19+ macros.
 
 ### Scripts provided as-is. Use at your own risk. No guarantees or warranty provided.
 
