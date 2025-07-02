@@ -9,8 +9,8 @@
 ' https://github.com/bitpusher2k
 '
 ' ExcelMacros.vba - By Bitpusher/The Digital Fox
-' v1.4 last updated 2025-02-12
-' Simple Excel macro set.
+' v1.5 last updated 2025-06-22
+' Simple set of useful Excel macros.
 '
 ' Usage:
 '
@@ -141,6 +141,22 @@ Sub HideGuidColumns()
             cell.EntireColumn.Hidden = True
         End If
     Next cell
+End Sub
+
+
+Sub HighlightCellsWithSelectedValue()
+' HighlightCellsWithSelectedValue Macro - Highlights all cells which contains the selected value
+    Dim rCell As Range
+    If ActiveCell.Value = vbNullString Then Exit Sub
+    Set rCell = ActiveCell
+    Do
+        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
+        If rCell.Address <> ActiveCell.Address Then
+            rCell.Interior.Color = 65535 ' rgbYellow/65535/Yellow
+        Else
+            Exit Do
+        End If
+    Loop
 End Sub
 
 

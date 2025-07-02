@@ -10,7 +10,7 @@ https://github.com/bitpusher2k
 
 # ExcelMacros.vba - By Bitpusher/The Digital Fox
 
-## v1.1 last updated 2024-05-04
+## v1.5 last updated 2025-06-22
 
 ## Simple Excel macro set.
 
@@ -65,6 +65,7 @@ If PERSONAL.XLSB cannot be loaded from default location a custom location can be
 * HideEmptyColumns - Hides all columns with data only in the first row (which is assumed to be the header row).
 * HideGuidColumns - Hide all columns with a GUID in the second row (the first is assumed to be the header). Be sure to enable "Microsoft VBScript Regular Expression 5.5" under "Tools" > "References..." for this to work.
 * SplitDateAndTimeToNewColumns - If a column containing *date* *space* *time* is selected: creates two new columns to the right, copies *date* into the first, and copies *time* into the second.
+* HighlightCellsWithSelectedValue - Highlights all cells which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries.
 * HighlightRowsWithSelectedValue - Highlights all lines that have a cell which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries. Separate macros for yellow/green/red highlighting included.
 * BlankIfError - Surround formulas in all selected cells with =IFERROR(,"").
 * ConvertSelectedToValues - Converts formulas in selected cells to values.
@@ -73,5 +74,8 @@ If PERSONAL.XLSB cannot be loaded from default location a custom location can be
 * SaveWorksheetAsXLSX - Saves current worksheet as XLSX with same path & filename as open file. Handy when processing CSV files - faster than pressing F12 > clicking Drop-down menu > clicking XLSX > clicking Save.
 * ClearAllHighlighting - Clears all highlighting in the worksheet (reverts changes made by the "HighlightRowsWithSelectedValue" and "HighlightDuplicateValuesSelected" macros).
 * UnhideAllRowsColumns - Un-hides all rows and columns (reverts changes made by the "HideEmptyColumns" and "HideGuidColumns" macros).
+* CustomSort - Brings up the custom sort dialog (saves a couple clicks).
+* DeleteHiddenRows - Deletes all currently hidden rows.
+* DeleteHiddenColumns - Deletes all currently hidden columns.
 
-Would like to create version of macro set that works with LibreOffice at some point, but that will require some work.
+Would like to create version of macro set that works with LibreOffice at some point, but that will require some research & conversion of functions.
