@@ -10,7 +10,7 @@ https://github.com/bitpusher2k
 
 # ExcelMacros.vba - By Bitpusher/The Digital Fox
 
-## v1.5 last updated 2025-06-22
+## v1.6 last updated 2025-09-13
 
 ## Simple Excel macro set.
 
@@ -67,6 +67,7 @@ If PERSONAL.XLSB cannot be loaded from default location a custom location can be
 * SplitDateAndTimeToNewColumns - If a column containing *date* *space* *time* is selected: creates two new columns to the right, copies *date* into the first, and copies *time* into the second.
 * HighlightCellsWithSelectedValue - Highlights all cells which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries.
 * HighlightRowsWithSelectedValue - Highlights all lines that have a cell which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries. Separate macros for yellow/green/red highlighting included.
+* HideRowsWithSelectedValue - Hides all lines that have a cell which contains the value in the currently selected cell.
 * BlankIfError - Surround formulas in all selected cells with =IFERROR(,"").
 * ConvertSelectedToValues - Converts formulas in selected cells to values.
 * HighlightDuplicateValuesSelected - Highlights duplicate values in selected range of cells.

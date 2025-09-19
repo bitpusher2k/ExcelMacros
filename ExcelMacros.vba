@@ -9,7 +9,7 @@
 ' https://github.com/bitpusher2k
 '
 ' ExcelMacros.vba - By Bitpusher/The Digital Fox
-' v1.5 last updated 2025-06-22
+' v1.6 last updated 2025-09-13
 ' Simple set of useful Excel macros.
 '
 ' Usage:
@@ -225,6 +225,22 @@ Sub HighlightRowsWithSelectedValueGreen()
         Else
             rCell.EntireRow.Interior.Color = 10025880
             rCell.Interior.Color = 15658671
+            Exit Do
+        End If
+    Loop
+End Sub
+
+Sub HideRowsWithSelectedValue()
+' HideRowsWithSelectedValue Macro - Hide all lines that have a cell which contains the selected value
+    Dim rCell As Range
+    If ActiveCell.Value = vbNullString Then Exit Sub
+    Set rCell = ActiveCell
+    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+    Do
+        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
+        If rCell.Address <> ActiveCell.Address Then
+        Else
+            rCell.EntireRow.Hidden = True
             Exit Do
         End If
     Loop
