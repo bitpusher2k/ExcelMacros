@@ -53,12 +53,12 @@ Screenshot of customized Excel ribbon buttons:
 ![Ribbon](Ribbon.png)
 
 
-Can also place an the already created copy of PERSONAL.XLSB into %appdata%\Microsoft\Excel\XLSTART - although you should not trust strange precompiled macros you find on the internet.
+Can also place an the already created copy of PERSONAL.XLSB into %appdata%\Microsoft\Excel\XLSTART - although you should not trust strange pre-compiled macros you find on the internet.
 If PERSONAL.XLSB does not load or becomes corrupted delete it from %appdata%\Microsoft\Excel\XLSTART and recreate. 
 If PERSONAL.XLSB cannot be loaded from default location a custom location can be defined in "Options" > "Advanced" > "General" > "At startup, open all files in:"
 
 ## List of included macros:
-* InitializeCsv - Applies the "AutoFitAllColumns50", "AutoFitAllRows50", "AddFilter", "HideEmptyColumns", and "HideGuidColumns" macros. Handy for initializing a CSV log file for manual review.
+* InitializeCsv - Applies the "AutoFitAllColumns50", "AutoFitAllRows50", "AddFilter", "HideEmptyColumns", "HideGuidColumns" macros, and freezes the top row. Handy for initializing a CSV file for manual review.
 * AutoFitAllColumns50 - Auto-fits all column width with maximum with of 50.
 * AutoFitAllRows50 - Auto-fits all row height with maximum height of 50.
 * AddFilter - Adds filter to top row. Easy enough to do with the Ctrl+Shift+L shortcut, but fits in with the flow when using other related macros.

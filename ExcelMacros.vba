@@ -9,7 +9,7 @@
 ' https://github.com/bitpusher2k
 '
 ' ExcelMacros.vba - By Bitpusher/The Digital Fox
-' v1.6 last updated 2025-09-13
+' v1.6.1 last updated 2025-09-23
 ' Simple set of useful Excel macros.
 '
 ' Usage:
@@ -49,12 +49,18 @@
 
 
 Sub InitializeCsv()
-' InitializeCsv Macro - Applies the AutoFitAllColumns50, AutoFitAllRows50, AddFilter, HideEmptyColumns, and HideGuidColumns macros.
+' InitializeCsv Macro - Applies the AutoFitAllColumns50, AutoFitAllRows50, AddFilter, HideEmptyColumns, and HideGuidColumns macros, then freeze the top row.
     Call AutoFitAllColumns50
     Call AutoFitAllRows50
     Call AddFilter
     Call HideEmptyColumns
     Call HideGuidColumns
+    Range("a1").Activate
+    With ActiveWindow
+        .SplitColumn = 0
+        .SplitRow = 1
+    End With
+    ActiveWindow.FreezePanes = True
 End Sub
 
 
