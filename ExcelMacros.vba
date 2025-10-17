@@ -266,6 +266,7 @@ Sub HideRowsWithSelectedValue()
     Do
         Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
         If rCell.Address <> ActiveCell.Address Then
+            rCell.EntireRow.Hidden = True
         Else
             rCell.EntireRow.Hidden = True
             Exit Do
