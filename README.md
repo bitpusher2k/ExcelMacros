@@ -10,7 +10,7 @@ https://github.com/bitpusher2k
 
 # ExcelMacros.vba - By Bitpusher/The Digital Fox
 
-## v1.6 last updated 2025-09-13
+## v1.6.2 last updated 2025-10-17
 
 ## Simple Excel macro set.
 
@@ -52,6 +52,9 @@ Screenshot of customization pane:
 Screenshot of customized Excel ribbon buttons:
 ![Ribbon](Ribbon.png)
 
+And if screen is not quite as wide it gets compressed:
+![Ribbon](RibbonShorter.png)
+
 
 Can also place an the already created copy of PERSONAL.XLSB into %appdata%\Microsoft\Excel\XLSTART - although you should not trust strange pre-compiled macros you find on the internet.
 If PERSONAL.XLSB does not load or becomes corrupted delete it from %appdata%\Microsoft\Excel\XLSTART and recreate. 
@@ -66,11 +69,12 @@ If PERSONAL.XLSB cannot be loaded from default location a custom location can be
 * HideGuidColumns - Hide all columns with a GUID in the second row (the first is assumed to be the header). Be sure to enable "Microsoft VBScript Regular Expression 5.5" under "Tools" > "References..." for this to work.
 * SplitDateAndTimeToNewColumns - If a column containing *date* *space* *time* is selected: creates two new columns to the right, copies *date* into the first, and copies *time* into the second.
 * HighlightCellsWithSelectedValue - Highlights all cells which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries.
-* HighlightRowsWithSelectedValue - Highlights all lines that have a cell which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries. Separate macros for yellow/green/red highlighting included.
+* HighlightRowsWithSelectedValue - Highlights all lines that have a cell which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries. Separate macros for yellow/red/orange/green highlighting included.
 * HideRowsWithSelectedValue - Hides all lines that have a cell which contains the value in the currently selected cell.
 * BlankIfError - Surround formulas in all selected cells with =IFERROR(,"").
 * ConvertSelectedToValues - Converts formulas in selected cells to values.
 * HighlightDuplicateValuesSelected - Highlights duplicate values in selected range of cells.
+* AddFrequencyColumn - Creates new column to the right of selected which contains frequency of values from selected column.
 * SaveWorkshetAsPDF - Saves current worksheet as PDF.
 * SaveWorksheetAsXLSX - Saves current worksheet as XLSX with same path & filename as open file. Handy when processing CSV files - faster than pressing F12 > clicking Drop-down menu > clicking XLSX > clicking Save.
 * ClearAllHighlighting - Clears all highlighting in the worksheet (reverts changes made by the "HighlightRowsWithSelectedValue" and "HighlightDuplicateValuesSelected" macros).

@@ -9,7 +9,7 @@
 ' https://github.com/bitpusher2k
 '
 ' ExcelMacros.vba - By Bitpusher/The Digital Fox
-' v1.6.1 last updated 2025-09-23
+' v1.6.2 last updated 2025-10-17
 ' Simple set of useful Excel macros.
 '
 ' Usage:
@@ -160,6 +160,7 @@ Sub HighlightCellsWithSelectedValue()
         If rCell.Address <> ActiveCell.Address Then
             rCell.Interior.Color = 65535 ' rgbYellow/65535/Yellow
         Else
+            rCell.Interior.Color = 65535 ' rgbYellow/65535/Yellow
             Exit Do
         End If
     Loop
@@ -211,6 +212,26 @@ Sub HighlightRowsWithSelectedValueRed()
         Else
             rCell.EntireRow.Interior.Color = 13353215
             rCell.Interior.Color = 9662683
+            Exit Do
+        End If
+    Loop
+End Sub
+
+
+Sub HighlightRowsWithSelectedValueOrange()
+' HighlightRowsWithSelectedValue Macro - Highlights all lines that have a cell which contains the selected value
+    Dim rCell As Range
+    If ActiveCell.Value = vbNullString Then Exit Sub
+    Set rCell = ActiveCell
+    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+    Do
+        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
+        If rCell.Address <> ActiveCell.Address Then
+            rCell.EntireRow.Interior.Color = 17919 ' rgbOrangeRed/17919/Orange Red
+            rCell.Interior.Color = 42495 ' rgbOrange/42495/Orange
+        Else
+            rCell.EntireRow.Interior.Color = 17919
+            rCell.Interior.Color = 42495
             Exit Do
         End If
     Loop
@@ -319,6 +340,72 @@ Sub HighlightDuplicateValuesSelected()
 End Sub
 
 
+Sub AddFrequencyColumn()
+' AddFrequencyColumn Macro - Adds column to right of selected column and populates with frequency of values in selected column
+    Dim ws As Worksheet
+    Dim selCol As Range
+    Dim newCol As Range
+    Dim dataRange As Range
+    Dim lastRow As Long
+    Dim colNum As Long
+    Dim i As Long
+    Dim formula As String
+
+    ' Check if a range is selected
+    If Selection Is Nothing Then
+        MsgBox "Please select a column containing data.", vbExclamation, "Error"
+        Exit Sub
+    End If
+
+    ' Get the selected column
+    Set ws = ActiveSheet
+    Set selCol = Selection.EntireColumn
+    colNum = selCol.Column
+
+    ' Find the last row with data in the selected column
+    lastRow = ws.Cells(ws.Rows.Count, colNum).End(xlUp).Row
+
+    ' Check if there's data
+    If lastRow < 2 Then
+        MsgBox "No data found in the selected column.", vbExclamation
+        Exit Sub
+    End If
+
+    ' Insert a new column to the right
+    ws.Columns(colNum + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+
+    ' Set the new column range
+    Set newCol = ws.Columns(colNum + 1)
+
+    ' Add header (assuming row 1 is header)
+    Dim originalHeader As String
+    originalHeader = ws.Cells(1, colNum).Value
+    If originalHeader = "" Then
+        ws.Cells(1, colNum + 1).Value = "Frequency"
+    Else
+        ws.Cells(1, colNum + 1).Value = originalHeader & "Frequency"
+    End If
+
+    ' Define the data range (excluding header)
+    Set dataRange = ws.Range(ws.Cells(2, colNum), ws.Cells(lastRow, colNum))
+
+    ' Apply COUNTIF formula to each cell in the new column
+    For i = 2 To lastRow
+        ' Use absolute reference for the range, relative for the cell being counted
+        formula = "=COUNTIF($" & Split(ws.Cells(2, colNum).Address, "$")(1) & _
+                  "$2:$" & Split(ws.Cells(2, colNum).Address, "$")(1) & "$" & lastRow & _
+                  "," & ws.Cells(i, colNum).Address(False, False) & ")"
+
+        ws.Cells(i, colNum + 1).Formula = formula
+    Next i
+
+    ' Auto-fit the new column
+    newCol.AutoFit
+
+    MsgBox "Frequency column added successfully!", vbInformation
+End Sub
+
+
 Sub SaveWorkshetAsPDF()
 ' SaveWorkshetAsPDF Macro - Saves current worksheet as PDF
     Dim wsA As Worksheet
@@ -380,7 +467,7 @@ End Sub
 
 
 Sub SaveWorksheetAsXLSX()
-' SaveWorksheetAsXLSX Macro - Saves current worksheet as XLSX with same path & filename
+' SaveWorksheetAsXLSX Macro - Saves current worksheet as XLSX with same path & filename (will give error if already exists)
     Dim ActiveFileName, ActiveFilePath, ThisFileName, BaseFileName, NewFullPath As String
     Dim FileNameArray() As String
     Dim FileNameArrayLen As Integer
@@ -439,9 +526,8 @@ Sub DeleteHiddenRows()
 End Sub
 
 
-
-
-Public Sub SplitDateAndTimeToNewColumns()
+Sub SplitDateAndTimeToNewColumns()
+' SplitDateAndTimeToNewColumns Macro - Splits selected column with date and time (formatted with a space, like '2025-01-01 04:27am' or '8/24/2023 1:01pm') to new "DateOnly" and "TimeOnly" columns created to the right
     Dim MyDateTime As Date
     Dim SelectedColumn As Range
     Dim LastRow As Long
@@ -453,7 +539,7 @@ Public Sub SplitDateAndTimeToNewColumns()
     On Error GoTo 0
 
     If SelectedColumn Is Nothing Then
-        MsgBox "Please select a column containing date and time data.", vbExclamation, "Error"
+        MsgBox "Please select a cell in a column containing date and time data.", vbExclamation, "Error"
         Exit Sub
     End If
 
@@ -463,6 +549,9 @@ Public Sub SplitDateAndTimeToNewColumns()
     ' Insert new columns to the right
     SelectedColumn.Offset(, 1).Insert Shift:=xlToRight
     SelectedColumn.Offset(, 2).Insert Shift:=xlToRight
+
+    SelectedColumn.Cells(1, 2).Value = "DateOnly"
+    SelectedColumn.Cells(1, 3).Value = "TimeOnly"
 
     ' Loop through each row (skip header row)
     For i = 2 To LastRow
