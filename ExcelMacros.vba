@@ -9,7 +9,7 @@
 ' https://github.com/bitpusher2k
 '
 ' ExcelMacros.vba - By Bitpusher/The Digital Fox
-' v1.6.2 last updated 2025-10-17
+' v1.6.3 last updated 2025-11-25
 ' Simple set of useful Excel macros.
 '
 ' Usage:
@@ -322,7 +322,7 @@ Sub ConvertSelectedToValues()
     Set myRange = Selection
     For Each myCell In myRange
         If myCell.HasFormula Then
-            myCell.Formula = myCell.Value
+            myCell.formula = myCell.Value
         End If
     Next myCell
 End Sub
@@ -347,7 +347,7 @@ Sub AddFrequencyColumn()
     Dim selCol As Range
     Dim newCol As Range
     Dim dataRange As Range
-    Dim lastRow As Long
+    Dim LastRow As Long
     Dim colNum As Long
     Dim i As Long
     Dim formula As String
@@ -364,10 +364,10 @@ Sub AddFrequencyColumn()
     colNum = selCol.Column
 
     ' Find the last row with data in the selected column
-    lastRow = ws.Cells(ws.Rows.Count, colNum).End(xlUp).Row
+    LastRow = ws.Cells(ws.Rows.Count, colNum).End(xlUp).row
 
     ' Check if there's data
-    If lastRow < 2 Then
+    If LastRow < 2 Then
         MsgBox "No data found in the selected column.", vbExclamation
         Exit Sub
     End If
@@ -388,16 +388,16 @@ Sub AddFrequencyColumn()
     End If
 
     ' Define the data range (excluding header)
-    Set dataRange = ws.Range(ws.Cells(2, colNum), ws.Cells(lastRow, colNum))
+    Set dataRange = ws.Range(ws.Cells(2, colNum), ws.Cells(LastRow, colNum))
 
     ' Apply COUNTIF formula to each cell in the new column
-    For i = 2 To lastRow
+    For i = 2 To LastRow
         ' Use absolute reference for the range, relative for the cell being counted
         formula = "=COUNTIF($" & Split(ws.Cells(2, colNum).Address, "$")(1) & _
-                  "$2:$" & Split(ws.Cells(2, colNum).Address, "$")(1) & "$" & lastRow & _
+                  "$2:$" & Split(ws.Cells(2, colNum).Address, "$")(1) & "$" & LastRow & _
                   "," & ws.Cells(i, colNum).Address(False, False) & ")"
 
-        ws.Cells(i, colNum + 1).Formula = formula
+        ws.Cells(i, colNum + 1).formula = formula
     Next i
 
     ' Auto-fit the new column
@@ -520,7 +520,7 @@ Sub DeleteHiddenRows()
     Dim Sheet As Worksheet
     Dim LastRow As Integer
     Set Sheet = ActiveSheet
-    LastRow = Sheet.UsedRange.Rows(Sheet.UsedRange.Rows.Count).Row
+    LastRow = Sheet.UsedRange.Rows(Sheet.UsedRange.Rows.Count).row
     For i = LastRow To 1 Step -1
     If Rows(i).Hidden = True Then Rows(i).EntireRow.Delete
     Next
@@ -567,3 +567,82 @@ Sub SplitDateAndTimeToNewColumns()
         SelectedColumn.Cells(i, 3).NumberFormat = "hh:mm:ss"
     Next i
 End Sub
+
+
+Sub CheckValueMatch()
+' CheckValueMatch Macro - Compares each row of one highlighted column with values in second highlighted column and if there is a match marks "true" in a new column to the right of second column - Used for manually combining results of queries into one CSV
+    Dim firstCol As Range
+    Dim secondCol As Range
+    Dim cell As Range
+    Dim matchResult As Variant
+    Dim resultColumn As Long
+    
+    On Error GoTo ErrorHandler
+    
+    ' Check if two ranges are selected
+    If Selection.Areas.Count <> 2 Then
+        MsgBox "Please select exactly two columns (hold Ctrl to select both).", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Assign the selections
+    Set firstCol = Selection.Areas(1)
+    Set secondCol = Selection.Areas(2)
+    
+    ' Validate single column selections
+    If firstCol.Columns.Count > 1 Or secondCol.Columns.Count > 1 Then
+        MsgBox "Please select single columns only.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Insert a new column to the right of second column
+    secondCol.EntireColumn.Offset(0, 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+    
+    ' Calculate result column (one right of second column)
+    resultColumn = secondCol.Column + 1
+    
+    ' Turn off screen updating for speed
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    
+    ' Loop through each cell in first column
+    For Each cell In firstCol
+        If cell.Value <> "" Then
+            ' Use COUNTIF to check if value exists in second column
+            matchResult = Application.WorksheetFunction.CountIf(secondCol, cell.Value)
+            
+            ' Write TRUE if match found
+            If matchResult > 0 Then
+                Cells(cell.row, resultColumn).Value = "TRUE"
+            Else
+                Cells(cell.row, resultColumn).Value = ""
+            End If
+        End If
+    Next cell
+    
+    ' Get column letters for header
+    Dim firstColLetter As String, secondColLetter As String
+    firstColLetter = Split(Cells(1, firstCol.Column).Address, "$")(1)
+    secondColLetter = Split(Cells(1, secondCol.Column).Address, "$")(1)
+    
+    ' Add header to result column
+    Cells(1, resultColumn).Value = firstColLetter & " in " & secondColLetter
+    
+    ' Restore settings
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+    
+    ' Auto-fit the result column width
+    Columns(resultColumn).AutoFit
+    
+    MsgBox "Complete! Matches marked as TRUE.", vbInformation
+    Exit Sub
+    
+ErrorHandler:
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+    MsgBox "Error: " & Err.Description, vbCritical
+End Sub
+
+
+

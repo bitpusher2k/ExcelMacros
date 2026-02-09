@@ -74,6 +74,7 @@ If PERSONAL.XLSB cannot be loaded from default location a custom location can be
 * BlankIfError - Surround formulas in all selected cells with =IFERROR(,"").
 * ConvertSelectedToValues - Converts formulas in selected cells to values.
 * HighlightDuplicateValuesSelected - Highlights duplicate values in selected range of cells.
+* CheckValueMatch - Compares each row of one highlighted column with values in second highlighted column and if there is a match marks "true" in a new column to the right of second column - Used for manually combining results of queries into one CSV
 * AddFrequencyColumn - Creates new column to the right of selected which contains frequency of values from selected column.
 * SaveWorkshetAsPDF - Saves current worksheet as PDF.
 * SaveWorksheetAsXLSX - Saves current worksheet as XLSX with same path & filename as open file. Handy when processing CSV files - faster than pressing F12 > clicking Drop-down menu > clicking XLSX > clicking Save.
