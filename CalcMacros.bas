@@ -9,8 +9,8 @@
 ' https://github.com/bitpusher2k
 '
 ' LibreOfficeMacros.bas - By Bitpusher/The Digital Fox
-' v1.0.0 last updated 2026-04-18
-' LibreOffice Calc port of ExcelMacros.vba (v1.6.3)
+' v1.8.0 last updated 2026-05-01
+' LibreOffice Calc port of ExcelMacros.vba
 ' Simple set of useful LibreOffice Calc macros.
 '
 ' Converted from Excel VBA to LibreOffice Basic (UNO API).
@@ -519,6 +519,21 @@ Sub HighlightRowsWithSelectedValueGreen()
 End Sub
 
 
+Sub ClearHighlightRowsWithSelectedValue()
+' Resets fill color to "No Fill" and font color to "Automatic" on all rows
+' containing the selected value.
+    Dim oDoc As Object
+    Dim oSheet As Object
+    Dim sValue As String
+    oDoc = ThisComponent
+    oSheet = oDoc.getCurrentController().getActiveSheet()
+    sValue = oDoc.getCurrentSelection().getString()
+    If sValue = "" Then Exit Sub
+    Call RemoveSheetFilterIfActive(oSheet)
+    Call ClearHighlightRowsByValue(oSheet, sValue)
+End Sub
+
+
 ' Helper: Highlight all rows containing a value with specified colors
 ' Ref: https://api.libreoffice.org/docs/idl/ref/interfacecom_1_1sun_1_1star_1_1util_1_1XSearchable.html
 Sub HighlightRowsByValue(oSheet As Object, sValue As String, lRowColor As Long, lCellColor As Long)
@@ -576,6 +591,50 @@ Sub HighlightRowsByValue(oSheet As Object, sValue As String, lRowColor As Long, 
         Next i
     End If
 
+    oDoc.unlockControllers()
+End Sub
+
+
+' Helper: Clear highlighting on all rows containing a value
+' Resets CellBackColor to -1 (No Fill / COL_AUTO) and CharColor to -1 (Automatic).
+' Ref: https://api.libreoffice.org/docs/idl/ref/servicecom_1_1sun_1_1star_1_1table_1_1CellProperties.html
+Sub ClearHighlightRowsByValue(oSheet As Object, sValue As String)
+    Dim oDoc As Object
+    Dim oSD As Object
+    Dim oFound As Object
+    Dim i As Long
+    oDoc = ThisComponent
+    oDoc.lockControllers()
+    ' Search for all matching cells
+    oSD = oSheet.createSearchDescriptor()
+    oSD.SearchString = sValue
+    oSD.SearchWords = False
+    oSD.SearchRegularExpression = False
+    oFound = oSheet.findAll(oSD)
+    If Not IsNull(oFound) Then
+        ' Determine used area for full-row clearing
+        Dim oCursor As Object
+        oCursor = oSheet.createCursor()
+        oCursor.gotoStartOfUsedArea(False)
+        oCursor.gotoEndOfUsedArea(True)
+        Dim nLastCol As Long
+        nLastCol = oCursor.getRangeAddress().EndColumn
+        For i = 0 To oFound.getCount() - 1
+            Dim oFoundRange As Object
+            oFoundRange = oFound.getByIndex(i)
+            Dim oRangeAddr As Object
+            oRangeAddr = oFoundRange.getRangeAddress()
+            Dim nFoundRow As Long
+            For nFoundRow = oRangeAddr.StartRow To oRangeAddr.EndRow
+                Dim oRowRange As Object
+                oRowRange = oSheet.getCellRangeByPosition(0, nFoundRow, nLastCol, nFoundRow)
+                ' Reset fill to "No Fill" (-1 = COL_AUTO / transparent)
+                oRowRange.CellBackColor = -1
+                ' Reset font color to "Automatic" (-1 = COL_AUTO / theme default)
+                oRowRange.CharColor = -1
+            Next nFoundRow
+        Next i
+    End If
     oDoc.unlockControllers()
 End Sub
 

@@ -10,7 +10,7 @@ https://github.com/bitpusher2k
 
 # ExcelMacros.vba - By Bitpusher/The Digital Fox
 
-## v1.7 last updated 2026-04-19
+## v1.8.0 last updated 2026-05-01
 
 ## Simple Microsoft Excel macro set. Now with LibreOffice Calc version.
 
@@ -121,7 +121,7 @@ Screenshot of customized Calc ribbon buttons:
 * HideGuidColumns - Hide all columns with a GUID in the second row (the first is assumed to be the header). Be sure to enable "Microsoft VBScript Regular Expression 5.5" under "Tools" > "References..." for this to work.
 * SplitDateAndTimeToNewColumns - If a column containing *date* *space* *time* is selected: creates two new columns to the right, copies *date* into the first, and copies *time* into the second.
 * HighlightCellsWithSelectedValue - Highlights all cells which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries.
-* HighlightRowsWithSelectedValue - Highlights all lines that have a cell which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries. Separate macros for yellow/red/orange/green highlighting included.
+* HighlightRowsWithSelectedValue - Highlights all lines that have a cell which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries. Separate macros for yellow/red/orange/green/cleared highlighting included.
 * HideRowsWithSelectedValue - Hides all lines that have a cell which contains the value in the currently selected cell.
 * BlankIfError - Surround formulas in all selected cells with =IFERROR(,"").
 * ConvertSelectedToValues - Converts formulas in selected cells to values.
