@@ -10,11 +10,11 @@ https://github.com/bitpusher2k
 
 # ExcelMacros.vba - By Bitpusher/The Digital Fox
 
-## v1.8.0 last updated 2026-05-01
+## v2.5.0 last updated 2026-07-04
 
 ## Simple Microsoft Excel macro set. Now with LibreOffice Calc version.
 
-## Useful for manual processing of CSV log files. Currently includes about 25 macros.
+## Useful for manual processing of CSV log files. Includes about 40 callable macros (counting the whole-cell match variants).
 
 ### Scripts provided as-is. Use at your own risk. No guarantees or warranty provided.
 
@@ -123,6 +123,8 @@ Screenshot of customized Calc ribbon buttons:
 * HighlightCellsWithSelectedValue - Highlights all cells which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries.
 * HighlightRowsWithSelectedValue - Highlights all lines that have a cell which contains the value in the currently selected cell. Can then use filter by color to limit view to highlighted entries. Separate macros for yellow/red/orange/green/cleared highlighting included.
 * HideRowsWithSelectedValue - Hides all lines that have a cell which contains the value in the currently selected cell.
+
+**Match mode (v2.5.0):** the unsuffixed selection macros above match on a partial/substring basis and are case-insensitive. A whole-cell variant of each is provided with a `Whole` suffix (e.g. `HighlightRowsWithSelectedValueWhole`, `HideRowsWithSelectedValueWhole`), which matches only cells equal to the selected value. Use the `Whole` variants for IDs, IPs, and GUIDs where a substring match would over-select (e.g. 10.0.0.5 also matching 10.0.0.51). All variants set their Find parameters explicitly, so results no longer depend on the last-used Find dialog settings.
 * BlankIfError - Surround formulas in all selected cells with =IFERROR(,"").
 * ConvertSelectedToValues - Converts formulas in selected cells to values.
 * HighlightDuplicateValuesSelected - Highlights duplicate values in selected range of cells.
@@ -136,6 +138,19 @@ Screenshot of customized Calc ribbon buttons:
 * DeleteHiddenRows - Deletes all currently hidden rows.
 * DeleteHiddenColumns - Deletes all currently hidden columns.
 
+
+# Changelog
+
+## v2.5.0 (2026-07-04)
+
+* Selection macros (`Highlight*`/`Hide*WithSelectedValue`) now set all Find parameters explicitly (`LookIn`/`LookAt`/`MatchCase`/`SearchOrder` in Excel, `SearchWords`/`SearchCaseSensitive`/`SearchRegularExpression` in Calc). Results are deterministic and no longer inherit the last-used Find dialog state. Ref: https://learn.microsoft.com/en-us/office/vba/api/excel.range.find
+* Added whole-cell `Whole`-suffixed variants of every selection macro; the unsuffixed macros are the partial/substring, case-insensitive defaults.
+* Consolidated the six near-identical highlight/hide subs into a shared engine (Excel), matching the structure the Calc port already used.
+* Fixed a 32,767-row overflow in `DeleteHiddenRows` (Excel) by using `Long` for row counts.
+* Added `Option Explicit` (Excel) and declared previously-undeclared loop variables.
+* Performance: `HideEmptyColumns` now does a single bulk array read; `HighlightDuplicateValuesSelected` is a two-pass tally instead of per-cell `COUNTIF`; loop-heavy macros wrap work in screen/calc guards with error-safe restore.
+* `HideGuidColumns` now decides on the first populated data cell per column rather than only row 2, so a blank second row no longer hides-miss a GUID column.
+* `SplitDateAndTimeToNewColumns` parses common ISO 8601 text (T separator, trailing Z, +/-HH:MM offset) in addition to native datetimes, and skips-and-counts unparseable rows instead of aborting.
 
 # Key Conversion Changes (Excel VBA to LibreOffice Basic)
 

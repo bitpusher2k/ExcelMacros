@@ -9,7 +9,7 @@
 ' https://github.com/bitpusher2k
 '
 ' LibreOfficeMacros.bas - By Bitpusher/The Digital Fox
-' v1.8.0 last updated 2026-05-01
+' v2.5.0 last updated 2026-07-04
 ' LibreOffice Calc port of ExcelMacros.vba
 ' Simple set of useful LibreOffice Calc macros.
 '
@@ -278,8 +278,6 @@ Sub HideEmptyColumns()
     Dim bHideIt As Boolean
 
     oDoc = ThisComponent
-    oDoc.lockControllers()
-
     oSheet = oDoc.getCurrentController().getActiveSheet()
 
     ' Determine used area
@@ -292,24 +290,42 @@ Sub HideEmptyColumns()
     nLastRow = oAddr.EndRow
     nLastCol = oAddr.EndColumn
 
+    ' Header only (or empty): nothing to evaluate, leave columns visible
+    If nLastRow < 1 Then Exit Sub
+
+    oDoc.lockControllers()
+
     oColumns = oSheet.getColumns()
     oRows = oSheet.getRows()
 
+    ' Single bulk read of the used area instead of per-cell getString()
+    Dim oData As Variant
+    oData = oSheet.getCellRangeByPosition(0, 0, nLastCol, nLastRow).getDataArray()
+
+    ' Precompute row visibility once
+    Dim bRowVisible() As Boolean
+    ReDim bRowVisible(nLastRow)
+    For j = 0 To nLastRow
+        bRowVisible(j) = oRows.getByIndex(j).IsVisible
+    Next j
+
     For i = 0 To nLastCol
         bHideIt = True
-
-        For j = 1 To nLastRow  ' Skip row 0 (header)
-            ' Only check visible rows
-            If oRows.getByIndex(j).IsVisible Then
-                Dim oCell As Object
-                oCell = oSheet.getCellByPosition(i, j)
-                If Trim(oCell.getString()) <> "" Then
+        For j = 1 To nLastRow          ' skip header row 0
+            If bRowVisible(j) Then
+                Dim v As Variant
+                v = oData(j)(i)
+                If VarType(v) = 8 Then          ' string
+                    If Trim(v) <> "" Then
+                        bHideIt = False
+                        Exit For
+                    End If
+                Else                             ' numeric/date/bool counts as data
                     bHideIt = False
                     Exit For
                 End If
             End If
         Next j
-
         oColumns.getByIndex(i).IsVisible = Not bHideIt
     Next i
 
@@ -336,20 +352,32 @@ Sub HideGuidColumns()
 
     oSheet = oDoc.getCurrentController().getActiveSheet()
 
-    ' Determine last used column
+    ' Determine used area
     Dim oCursor As Object
     oCursor = oSheet.createCursor()
     oCursor.gotoStartOfUsedArea(False)
     oCursor.gotoEndOfUsedArea(True)
     nLastCol = oCursor.getRangeAddress().EndColumn
+    Dim nLastRow As Long
+    nLastRow = oCursor.getRangeAddress().EndRow
 
     oColumns = oSheet.getColumns()
 
+    ' Decide on the first POPULATED data cell (rows 1..N, skipping header row 0),
+    ' so a blank second row no longer causes a GUID column to be missed.
+    Const SAMPLE_ROWS = 20
+    Dim j As Long, nMaxSample As Long
+    nMaxSample = SAMPLE_ROWS
+    If nLastRow < nMaxSample Then nMaxSample = nLastRow
+
     For i = 0 To nLastCol
-        sCellVal = Trim(oSheet.getCellByPosition(i, 1).getString()) ' Row index 1 = second row
-        If IsGUID(sCellVal) Then
-            oColumns.getByIndex(i).IsVisible = False
-        End If
+        For j = 1 To nMaxSample
+            sCellVal = Trim(oSheet.getCellByPosition(i, j).getString())
+            If Len(sCellVal) > 0 Then
+                If IsGUID(sCellVal) Then oColumns.getByIndex(i).IsVisible = False
+                Exit For
+            End If
+        Next j
     Next i
 
     oDoc.unlockControllers()
@@ -397,9 +425,25 @@ Function IsGUID(ByVal s As String) As Boolean
 End Function
 
 
+' =====================================================================
+' Find-based selection macros (LibreOffice port).
+' Default (unsuffixed) macros use PARTIAL/substring match (SearchWords=False).
+' "...Whole" variants use whole-cell match (SearchWords=True).
+' All are case-INSENSITIVE (SearchCaseSensitive=False) and deterministic.
+' =====================================================================
+
 Sub HighlightCellsWithSelectedValue()
-' HighlightCellsWithSelectedValue Macro - Highlights all cells which contain the selected value
-' Uses createSearchDescriptor() for cell searching
+' Highlights all cells matching the selected value (Yellow). PARTIAL match (default).
+    Call HighlightCellsByValue(False)
+End Sub
+
+Sub HighlightCellsWithSelectedValueWhole()
+' Highlights all cells matching the selected value (Yellow). WHOLE-cell match.
+    Call HighlightCellsByValue(True)
+End Sub
+
+Sub HighlightCellsByValue(bWholeCell As Boolean)
+' Shared engine for cell highlighting. bWholeCell => whole-cell vs substring match.
 ' Ref: https://api.libreoffice.org/docs/idl/ref/interfacecom_1_1sun_1_1star_1_1util_1_1XSearchable.html
     Dim oDoc As Object
     Dim oSheet As Object
@@ -409,7 +453,6 @@ Sub HighlightCellsWithSelectedValue()
     Dim oFound As Object
     Dim i As Long
 
-    ' Yellow in LibreOffice RGB
     Const COLOR_YELLOW = 16776960 ' RGB(255, 255, 0)
 
     oDoc = ThisComponent
@@ -421,10 +464,10 @@ Sub HighlightCellsWithSelectedValue()
 
     oDoc.lockControllers()
 
-    ' Search entire sheet for matching cells
     oSD = oSheet.createSearchDescriptor()
     oSD.SearchString = sValue
-    oSD.SearchWords = False   ' Partial match (like VBA Find)
+    oSD.SearchWords = bWholeCell
+    oSD.SearchCaseSensitive = False
     oSD.SearchRegularExpression = False
 
     oFound = oSheet.findAll(oSD)
@@ -440,88 +483,63 @@ End Sub
 
 
 Sub HighlightRowsWithSelectedValue()
-' HighlightRowsWithSelectedValue Macro - Highlights all rows that have a cell
-' containing the selected value. Row = Pale Goldenrod, matching cell = Yellow.
+' Row = Pale Goldenrod, matching cell = Yellow. PARTIAL match (default).
+    Call HighlightRowsSelected(15657130, 16776960, False)
+End Sub
+
+Sub HighlightRowsWithSelectedValueWhole()
+    Call HighlightRowsSelected(15657130, 16776960, True)
+End Sub
+
+Sub HighlightRowsSelected(lRowColor As Long, lCellColor As Long, bWholeCell As Boolean)
+' Shared front-end: read selection, clear filter, delegate to HighlightRowsByValue.
     Dim oDoc As Object
     Dim oSheet As Object
     Dim sValue As String
-
-    ' Converted from Excel BGR to LibreOffice RGB
-    Const COLOR_YELLOW = 16776960       ' RGB(255, 255, 0)
-    Const COLOR_PALE_GOLDENROD = 15657130 ' RGB(238, 232, 170) - standard CSS PaleGoldenrod
-
     oDoc = ThisComponent
     oSheet = oDoc.getCurrentController().getActiveSheet()
     sValue = oDoc.getCurrentSelection().getString()
     If sValue = "" Then Exit Sub
-
-    ' Remove any active filters first so all rows are visible
     Call RemoveSheetFilterIfActive(oSheet)
-
-    Call HighlightRowsByValue(oSheet, sValue, COLOR_PALE_GOLDENROD, COLOR_YELLOW)
+    Call HighlightRowsByValue(oSheet, sValue, lRowColor, lCellColor, bWholeCell)
 End Sub
 
 
 Sub HighlightRowsWithSelectedValueRed()
-' Highlights rows with selected value - Red/Pink color scheme
-    Dim oDoc As Object
-    Dim oSheet As Object
-    Dim sValue As String
-
-    Const COLOR_PINK = 16761035          ' RGB(255, 192, 203)
-    Const COLOR_PALE_VIOLET_RED = 14381203 ' RGB(219, 112, 147)
-
-    oDoc = ThisComponent
-    oSheet = oDoc.getCurrentController().getActiveSheet()
-    sValue = oDoc.getCurrentSelection().getString()
-    If sValue = "" Then Exit Sub
-
-    Call RemoveSheetFilterIfActive(oSheet)
-    Call HighlightRowsByValue(oSheet, sValue, COLOR_PINK, COLOR_PALE_VIOLET_RED)
+' Pink row, PaleVioletRed cell. PARTIAL match (default).
+    Call HighlightRowsSelected(16761035, 14381203, False)
+End Sub
+Sub HighlightRowsWithSelectedValueRedWhole()
+    Call HighlightRowsSelected(16761035, 14381203, True)
 End Sub
 
 
 Sub HighlightRowsWithSelectedValueOrange()
-' Highlights rows with selected value - Orange color scheme
-    Dim oDoc As Object
-    Dim oSheet As Object
-    Dim sValue As String
-
-    Const COLOR_ORANGE_RED = 16729344    ' RGB(255, 69, 0)
-    Const COLOR_ORANGE = 16753920        ' RGB(255, 165, 0)
-
-    oDoc = ThisComponent
-    oSheet = oDoc.getCurrentController().getActiveSheet()
-    sValue = oDoc.getCurrentSelection().getString()
-    If sValue = "" Then Exit Sub
-
-    Call RemoveSheetFilterIfActive(oSheet)
-    Call HighlightRowsByValue(oSheet, sValue, COLOR_ORANGE_RED, COLOR_ORANGE)
+' OrangeRed row, Orange cell. PARTIAL match (default).
+    Call HighlightRowsSelected(16729344, 16753920, False)
+End Sub
+Sub HighlightRowsWithSelectedValueOrangeWhole()
+    Call HighlightRowsSelected(16729344, 16753920, True)
 End Sub
 
 
 Sub HighlightRowsWithSelectedValueGreen()
-' Highlights rows with selected value - Green color scheme
-    Dim oDoc As Object
-    Dim oSheet As Object
-    Dim sValue As String
-
-    Const COLOR_PALE_GREEN = 10025880    ' RGB(152, 251, 152)
-    Const COLOR_PALE_TURQUOISE = 11529966 ' RGB(175, 238, 238)
-
-    oDoc = ThisComponent
-    oSheet = oDoc.getCurrentController().getActiveSheet()
-    sValue = oDoc.getCurrentSelection().getString()
-    If sValue = "" Then Exit Sub
-
-    Call RemoveSheetFilterIfActive(oSheet)
-    Call HighlightRowsByValue(oSheet, sValue, COLOR_PALE_GREEN, COLOR_PALE_TURQUOISE)
+' PaleGreen row, PaleTurquoise cell. PARTIAL match (default).
+    Call HighlightRowsSelected(10025880, 11529966, False)
+End Sub
+Sub HighlightRowsWithSelectedValueGreenWhole()
+    Call HighlightRowsSelected(10025880, 11529966, True)
 End Sub
 
 
 Sub ClearHighlightRowsWithSelectedValue()
-' Resets fill color to "No Fill" and font color to "Automatic" on all rows
-' containing the selected value.
+' Resets fill and font color on rows matching the selected value. PARTIAL match (default).
+    Call ClearHighlightRowsSelected(False)
+End Sub
+Sub ClearHighlightRowsWithSelectedValueWhole()
+    Call ClearHighlightRowsSelected(True)
+End Sub
+Sub ClearHighlightRowsSelected(bWholeCell As Boolean)
     Dim oDoc As Object
     Dim oSheet As Object
     Dim sValue As String
@@ -530,13 +548,13 @@ Sub ClearHighlightRowsWithSelectedValue()
     sValue = oDoc.getCurrentSelection().getString()
     If sValue = "" Then Exit Sub
     Call RemoveSheetFilterIfActive(oSheet)
-    Call ClearHighlightRowsByValue(oSheet, sValue)
+    Call ClearHighlightRowsByValue(oSheet, sValue, bWholeCell)
 End Sub
 
 
 ' Helper: Highlight all rows containing a value with specified colors
 ' Ref: https://api.libreoffice.org/docs/idl/ref/interfacecom_1_1sun_1_1star_1_1util_1_1XSearchable.html
-Sub HighlightRowsByValue(oSheet As Object, sValue As String, lRowColor As Long, lCellColor As Long)
+Sub HighlightRowsByValue(oSheet As Object, sValue As String, lRowColor As Long, lCellColor As Long, bWholeCell As Boolean)
     Dim oDoc As Object
     Dim oSD As Object
     Dim oFound As Object
@@ -553,7 +571,8 @@ Sub HighlightRowsByValue(oSheet As Object, sValue As String, lRowColor As Long, 
     ' Search for all matching cells
     oSD = oSheet.createSearchDescriptor()
     oSD.SearchString = sValue
-    oSD.SearchWords = False
+    oSD.SearchWords = bWholeCell
+    oSD.SearchCaseSensitive = False
     oSD.SearchRegularExpression = False
 
     oFound = oSheet.findAll(oSD)
@@ -598,7 +617,7 @@ End Sub
 ' Helper: Clear highlighting on all rows containing a value
 ' Resets CellBackColor to -1 (No Fill / COL_AUTO) and CharColor to -1 (Automatic).
 ' Ref: https://api.libreoffice.org/docs/idl/ref/servicecom_1_1sun_1_1star_1_1table_1_1CellProperties.html
-Sub ClearHighlightRowsByValue(oSheet As Object, sValue As String)
+Sub ClearHighlightRowsByValue(oSheet As Object, sValue As String, bWholeCell As Boolean)
     Dim oDoc As Object
     Dim oSD As Object
     Dim oFound As Object
@@ -608,7 +627,8 @@ Sub ClearHighlightRowsByValue(oSheet As Object, sValue As String)
     ' Search for all matching cells
     oSD = oSheet.createSearchDescriptor()
     oSD.SearchString = sValue
-    oSD.SearchWords = False
+    oSD.SearchWords = bWholeCell
+    oSD.SearchCaseSensitive = False
     oSD.SearchRegularExpression = False
     oFound = oSheet.findAll(oSD)
     If Not IsNull(oFound) Then
@@ -649,7 +669,14 @@ End Sub
 
 
 Sub HideRowsWithSelectedValue()
-' HideRowsWithSelectedValue Macro - Hides all rows that have a cell containing the selected value
+' Hides all rows matching the selected value. PARTIAL match (default).
+    Call HideRowsSelected(False)
+End Sub
+Sub HideRowsWithSelectedValueWhole()
+    Call HideRowsSelected(True)
+End Sub
+Sub HideRowsSelected(bWholeCell As Boolean)
+' Hides all rows that have a cell matching the selected value.
     Dim oDoc As Object
     Dim oSheet As Object
     Dim sValue As String
@@ -669,7 +696,8 @@ Sub HideRowsWithSelectedValue()
 
     oSD = oSheet.createSearchDescriptor()
     oSD.SearchString = sValue
-    oSD.SearchWords = False
+    oSD.SearchWords = bWholeCell
+    oSD.SearchCaseSensitive = False
     oSD.SearchRegularExpression = False
 
     oFound = oSheet.findAll(oSD)
@@ -1249,6 +1277,7 @@ Sub SplitDateAndTimeToNewColumns()
     Dim nSelCol As Long
     Dim nLastRow As Long
     Dim i As Long
+    Dim nSkipped As Long
 
     oDoc = ThisComponent
     oSheet = oDoc.getCurrentController().getActiveSheet()
@@ -1287,12 +1316,9 @@ Sub SplitDateAndTimeToNewColumns()
         Dim oSrcCell As Object
         oSrcCell = oSheet.getCellByPosition(nSelCol, i)
 
-        ' In LibreOffice, dates are stored as numeric values
-        ' The integer part is the date serial, fractional part is the time
+        ' Native numeric serial or parseable text (incl. ISO 8601 T/Z/offset)
         Dim dDateTime As Double
-        dDateTime = oSrcCell.getValue()
-
-        If dDateTime <> 0 Then
+        If TryParseCalcDateTime(oSrcCell, dDateTime) Then
             Dim dDatePart As Double
             Dim dTimePart As Double
             dDatePart = Int(dDateTime)
@@ -1329,6 +1355,8 @@ Sub SplitDateAndTimeToNewColumns()
                 nTimeFmt = oFormats.addNew("HH:MM:SS", oLocale)
             End If
             oTimeCell.NumberFormat = nTimeFmt
+        Else
+            nSkipped = nSkipped + 1
         End If
     Next i
 
@@ -1337,7 +1365,54 @@ Sub SplitDateAndTimeToNewColumns()
     oSheet.getColumns().getByIndex(nSelCol + 2).OptimalWidth = True
 
     oDoc.unlockControllers()
+
+    If nSkipped > 0 Then
+        MsgBox "Done. " & nSkipped & " row(s) could not be parsed as date/time and were left blank.", 64
+    End If
 End Sub
+
+
+' Helper: parse a cell to a Calc date serial (Double). Handles native numeric
+' serials plus common ISO 8601 text (T separator, trailing Z, +/-HH:MM offset).
+' Returns False if the cell cannot be interpreted as a date/time.
+' Note: assumes the default null date (1899-12-30), matching Basic CDate serials.
+Function TryParseCalcDateTime(oCell As Object, ByRef dSerial As Double) As Boolean
+    Dim dVal As Double, s As String
+    Dim p As Long, tzPlus As Long, tzMinus As Long, firstColon As Long
+
+    TryParseCalcDateTime = False
+
+    dVal = oCell.getValue()
+    If dVal <> 0 Then
+        dSerial = dVal
+        TryParseCalcDateTime = True
+        Exit Function
+    End If
+
+    s = Trim(oCell.getString())
+    If Len(s) = 0 Then Exit Function
+
+    ' ISO 8601 normalisation: T -> space, drop trailing Z
+    s = Replace(s, "T", " ")
+    s = Replace(s, "t", " ")
+    If Right(s, 1) = "Z" Or Right(s, 1) = "z" Then s = Left(s, Len(s) - 1)
+    s = Trim(s)
+
+    ' Strip trailing timezone offset (+HH:MM / -HH:MM) after the time portion
+    p = InStr(s, " ")
+    If p > 0 Then
+        tzPlus = InStr(p, s, "+")
+        If tzPlus > 0 Then s = Trim(Left(s, tzPlus - 1))
+        firstColon = InStr(p, s, ":")
+        tzMinus = LastInStr(s, "-")
+        If firstColon > 0 And tzMinus > firstColon Then s = Trim(Left(s, tzMinus - 1))
+    End If
+
+    If IsDate(s) Then
+        dSerial = CDbl(CDate(s))
+        TryParseCalcDateTime = True
+    End If
+End Function
 
 
 Sub CheckValueMatch()

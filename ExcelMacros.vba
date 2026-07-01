@@ -9,7 +9,7 @@
 ' https://github.com/bitpusher2k
 '
 ' ExcelMacros.vba - By Bitpusher/The Digital Fox
-' v1.8.0 last updated 2026-05-01
+' v2.5.0 last updated 2026-07-04
 ' Simple set of useful Excel macros.
 '
 ' Usage:
