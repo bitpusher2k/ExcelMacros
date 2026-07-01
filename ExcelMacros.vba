@@ -47,6 +47,8 @@
 '
 ' #excel #vba #macro #useful #toolbar #ribbon #autofit #row #column #filter #guid #highlight #selected #blankiferror #formula #value #duplicate #xlsx #pdf
 
+Option Explicit
+
 
 Sub InitializeCsv()
 ' InitializeCsv Macro - Applies the AutoFitAllColumns50, AutoFitAllRows50, AddFilter, HideEmptyColumns, and HideGuidColumns macros, then freeze the top row.
@@ -104,195 +106,205 @@ End Sub
 
 
 Sub HideEmptyColumns()
-' HideEmptyColumns Macro - hides all columns with data only in the first row (which is assumed to be the header row)
+' HideEmptyColumns Macro - hides all columns with data only in the first row (assumed header).
+' Emptiness is judged across VISIBLE rows only. Fast single-read Variant-array implementation.
     Dim rng As Range
-    Dim nLastRow As Long
-    Dim nLastColumn As Integer
-    Dim i As Integer
+    Dim vals As Variant
+    Dim nRows As Long, nCols As Long
+    Dim r As Long, c As Long
+    Dim rowVisible() As Boolean
     Dim HideIt As Boolean
-    Dim j As Long
 
     Set rng = ActiveSheet.UsedRange
-    nLastRow = rng.Rows.Count + rng.row - 1
-    nLastColumn = rng.Columns.Count + rng.Column - 1
+    nRows = rng.Rows.Count
+    nCols = rng.Columns.Count
+    ' Header only (or empty sheet): nothing to evaluate, leave columns visible
+    If nRows < 2 Then Exit Sub
 
-    For i = 1 To nLastColumn
+    On Error GoTo Cleanup
+    Application.ScreenUpdating = False
+
+    vals = rng.Value   ' one COM round-trip instead of nRows*nCols cell reads
+
+    ' Precompute row visibility once (cheap relative to per-cell value reads)
+    ReDim rowVisible(1 To nRows)
+    For r = 1 To nRows
+        rowVisible(r) = Not rng.Rows(r).EntireRow.Hidden
+    Next r
+
+    For c = 1 To nCols
         HideIt = True
-
-        For j = 2 To nLastRow
-            If Not Rows(j).Hidden Then
-                If Cells(j, i).Value <> "" Then
-                    HideIt = False
+        For r = 2 To nRows            ' skip header (first row of used range)
+            If rowVisible(r) Then
+                If IsError(vals(r, c)) Then
+                    HideIt = False     ' an error value still counts as data
                     Exit For
+                ElseIf Not IsEmpty(vals(r, c)) Then
+                    If Len(CStr(vals(r, c))) > 0 Then
+                        HideIt = False
+                        Exit For
+                    End If
                 End If
             End If
-        Next
+        Next r
+        rng.Columns(c).EntireColumn.Hidden = HideIt
+    Next c
 
-        Columns(i).EntireColumn.Hidden = HideIt
-    Next
+Cleanup:
+    Application.ScreenUpdating = True
+    If Err.Number <> 0 Then MsgBox "HideEmptyColumns error: " & Err.Description, vbCritical
 End Sub
 
 
 Sub HideGuidColumns()
-' HideGuidColumns Macro - Hide all columns with a GUID in the second row (the first is assumed to be the header)
+' HideGuidColumns Macro - Hides columns whose data looks like a GUID.
+' Decides on the first POPULATED data cell in each column (not just row 2),
+' so a blank cell in row 2 no longer causes a GUID column to be missed.
 ' Be sure to enable "Microsoft VBScript Regular Expression 5.5" under "Tools" > "References..." for this to work.
-    Dim cell As Range
+    Const SAMPLE_ROWS As Long = 20
     Dim regex As RegExp
+    Dim rng As Range
+    Dim nRows As Long, nCols As Long
+    Dim r As Long, c As Long, maxSample As Long
+    Dim v As String
+    Dim isGuidCol As Boolean
+
+    Set rng = ActiveSheet.UsedRange
+    nRows = rng.Rows.Count
+    nCols = rng.Columns.Count
+    If nRows < 2 Then Exit Sub
+    maxSample = SAMPLE_ROWS + 1
+    If nRows < maxSample Then maxSample = nRows
+
     Set regex = New RegExp
     regex.Global = True
     regex.IgnoreCase = True
     regex.Pattern = "^({|\()?[A-Fa-f0-9]{8}-([A-Fa-f0-9]{4}-){3}[A-Fa-f0-9]{12}(}|\))?$"
-    For Each cell In ActiveWorkbook.ActiveSheet.Rows("2").Cells
-        If regex.Test(cell.Value) Then
-            cell.EntireColumn.Hidden = True
-        End If
-    Next cell
+
+    On Error GoTo Cleanup
+    Application.ScreenUpdating = False
+
+    For c = 1 To nCols
+        isGuidCol = False
+        For r = 2 To maxSample                  ' skip header (first row of used range)
+            v = CStr(rng.Cells(r, c).Value)
+            If Len(v) > 0 Then
+                isGuidCol = regex.Test(v)       ' decide on the first populated cell
+                Exit For
+            End If
+        Next r
+        If isGuidCol Then rng.Columns(c).EntireColumn.Hidden = True
+    Next c
+
+Cleanup:
+    Application.ScreenUpdating = True
+    If Err.Number <> 0 Then MsgBox "HideGuidColumns error: " & Err.Description, vbCritical
 End Sub
 
 
+' =====================================================================
+' Find-based selection macros. All share the ActOnSelectedValue engine.
+' Default (unsuffixed) macros use PARTIAL/substring match.
+' "...Whole" variants use whole-cell match. All are case-INSENSITIVE.
+' Matching is now deterministic: LookIn/LookAt/MatchCase/SearchOrder are
+' set explicitly on every Find. Previously these were inherited from the
+' last Find dialog/API call, making results session-dependent.
+' Ref: https://learn.microsoft.com/en-us/office/vba/api/excel.range.find
+' =====================================================================
+
+Private Sub ActOnSelectedValue(ByVal Action As String, _
+                               Optional ByVal RowColor As Long = -1, _
+                               Optional ByVal CellColor As Long = -1, _
+                               Optional ByVal LookAtMode As XlLookAt = xlPart)
+' Shared engine. Action: "cell" | "row" | "hide" | "clear".
+' Finds every cell in UsedRange matching ActiveCell.Value and applies Action.
+    Dim rCell As Range
+    If ActiveCell Is Nothing Then Exit Sub
+    If ActiveCell.Value = vbNullString Then Exit Sub
+
+    ' Row-scoped actions need all data visible to behave correctly
+    If Action <> "cell" Then
+        If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+    End If
+
+    Application.ScreenUpdating = False
+    Set rCell = ActiveCell
+    Do
+        Set rCell = ActiveSheet.UsedRange.Find( _
+            What:=ActiveCell.Value, After:=rCell, _
+            LookIn:=xlValues, LookAt:=LookAtMode, _
+            SearchOrder:=xlByRows, SearchDirection:=xlNext, _
+            MatchCase:=False)
+        If rCell Is Nothing Then Exit Do
+
+        Select Case Action
+            Case "cell": rCell.Interior.Color = CellColor
+            Case "row"
+                rCell.EntireRow.Interior.Color = RowColor
+                rCell.Interior.Color = CellColor
+            Case "hide": rCell.EntireRow.Hidden = True
+            Case "clear"
+                rCell.EntireRow.Interior.ColorIndex = xlNone
+                rCell.EntireRow.Font.ColorIndex = xlAutomatic
+        End Select
+
+        If rCell.Address = ActiveCell.Address Then Exit Do
+    Loop
+    Application.ScreenUpdating = True
+End Sub
+
+
+' --- Partial/substring match (default; existing ribbon names preserved) ---
 Sub HighlightCellsWithSelectedValue()
-' HighlightCellsWithSelectedValue Macro - Highlights all cells which contains the selected value
-    Dim rCell As Range
-    If ActiveCell.Value = vbNullString Then Exit Sub
-    Set rCell = ActiveCell
-    Do
-        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
-        If rCell.Address <> ActiveCell.Address Then
-            rCell.Interior.Color = 65535 ' rgbYellow/65535/Yellow
-        Else
-            rCell.Interior.Color = 65535 ' rgbYellow/65535/Yellow
-            Exit Do
-        End If
-    Loop
+' Highlights every cell containing the selected value (Yellow)
+    ActOnSelectedValue "cell", , 65535, xlPart
 End Sub
-
-
 Sub HighlightRowsWithSelectedValue()
-' HighlightRowsWithSelectedValue Macro - Highlights all lines that have a cell which contains the selected value
-    Dim rCell As Range
-    If ActiveCell.Value = vbNullString Then Exit Sub
-    Set rCell = ActiveCell
-    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
-    Do
-        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
-        If rCell.Address <> ActiveCell.Address Then
-            rCell.EntireRow.Interior.Color = 7071982 ' rgbPaleGoldenrod/7071982/Pale Goldenrod
-            rCell.Interior.Color = 65535 ' rgbYellow/65535/Yellow
-            ' Some handy colors:
-            ' rgbOrange/42495/Orange
-            ' rgbPink/13353215/Pink
-            ' rgbYellow/65535/Yellow
-            ' rgbOrangeRed/17919/Orange Red
-            ' rgbPaleGreen/10025880/Pale Green
-            ' rgbPaleGoldenrod/7071982/Pale Goldenrod
-            ' rgbLightYellow/14745599/Light Yellow
-            ' rgbPaleGreen/10025880/Pale Green
-            ' rgbPaleTurquoise/15658671/Pale Turquoise
-            ' rgbPaleVioletRed/9662683/Pale Violet Red
-        Else
-            rCell.EntireRow.Interior.Color = 7071982 ' rgbPaleGoldenrod/7071982/Pale Goldenrod
-            rCell.Interior.Color = 65535 ' rgbYellow/65535/Yellow
-            Exit Do
-        End If
-    Loop
+' Highlights rows containing the selected value (row PaleGoldenrod, cell Yellow)
+    ActOnSelectedValue "row", 7071982, 65535, xlPart
 End Sub
-
-
 Sub HighlightRowsWithSelectedValueRed()
-' HighlightRowsWithSelectedValue Macro - Highlights all lines that have a cell which contains the selected value
-    Dim rCell As Range
-    If ActiveCell.Value = vbNullString Then Exit Sub
-    Set rCell = ActiveCell
-    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
-    Do
-        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
-        If rCell.Address <> ActiveCell.Address Then
-            rCell.EntireRow.Interior.Color = 13353215 ' rgbPink/13353215/Pink
-            rCell.Interior.Color = 9662683 ' rgbPaleVioletRed/9662683/Pale Violet Red
-        Else
-            rCell.EntireRow.Interior.Color = 13353215
-            rCell.Interior.Color = 9662683
-            Exit Do
-        End If
-    Loop
+' Row Pink, cell PaleVioletRed
+    ActOnSelectedValue "row", 13353215, 9662683, xlPart
 End Sub
-
-
 Sub HighlightRowsWithSelectedValueOrange()
-' HighlightRowsWithSelectedValue Macro - Highlights all lines that have a cell which contains the selected value
-    Dim rCell As Range
-    If ActiveCell.Value = vbNullString Then Exit Sub
-    Set rCell = ActiveCell
-    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
-    Do
-        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
-        If rCell.Address <> ActiveCell.Address Then
-            rCell.EntireRow.Interior.Color = 17919 ' rgbOrangeRed/17919/Orange Red
-            rCell.Interior.Color = 42495 ' rgbOrange/42495/Orange
-        Else
-            rCell.EntireRow.Interior.Color = 17919
-            rCell.Interior.Color = 42495
-            Exit Do
-        End If
-    Loop
+' Row OrangeRed, cell Orange
+    ActOnSelectedValue "row", 17919, 42495, xlPart
 End Sub
-
-
 Sub HighlightRowsWithSelectedValueGreen()
-' HighlightRowsWithSelectedValue Macro - Highlights all lines that have a cell which contains the selected value
-    Dim rCell As Range
-    If ActiveCell.Value = vbNullString Then Exit Sub
-    Set rCell = ActiveCell
-    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
-    Do
-        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
-        If rCell.Address <> ActiveCell.Address Then
-            rCell.EntireRow.Interior.Color = 10025880 ' rgbPaleGreen/10025880/Pale Green
-            rCell.Interior.Color = 15658671 ' rgbPaleTurquoise/15658671/Pale Turquoise
-        Else
-            rCell.EntireRow.Interior.Color = 10025880
-            rCell.Interior.Color = 15658671
-            Exit Do
-        End If
-    Loop
+' Row PaleGreen, cell PaleTurquoise
+    ActOnSelectedValue "row", 10025880, 15658671, xlPart
 End Sub
-
-
 Sub HighlightRowsWithSelectedValueCleared()
-' HighlightRowsWithSelectedValueCleared Macro - Clears highlighting for all lines that have a cell which contains the selected value
-    Dim rCell As Range
-    If ActiveCell.Value = vbNullString Then Exit Sub
-    Set rCell = ActiveCell
-    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
-    Do
-        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
-        If rCell.Address <> ActiveCell.Address Then
-            rCell.EntireRow.Interior.ColorIndex = xlNone
-            rCell.EntireRow.Font.ColorIndex = xlAutomatic
-        Else
-            rCell.EntireRow.Interior.ColorIndex = xlNone
-            rCell.EntireRow.Font.ColorIndex = xlAutomatic
-            Exit Do
-        End If
-    Loop
+' Clears highlighting on rows containing the selected value
+    ActOnSelectedValue "clear", , , xlPart
+End Sub
+Sub HideRowsWithSelectedValue()
+' Hides rows containing the selected value
+    ActOnSelectedValue "hide", , , xlPart
 End Sub
 
-
-Sub HideRowsWithSelectedValue()
-' HideRowsWithSelectedValue Macro - Hide all lines that have a cell which contains the selected value
-    Dim rCell As Range
-    If ActiveCell.Value = vbNullString Then Exit Sub
-    Set rCell = ActiveCell
-    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
-    Do
-        Set rCell = ActiveSheet.UsedRange.Cells.Find(ActiveCell.Value, rCell)
-        If rCell.Address <> ActiveCell.Address Then
-            rCell.EntireRow.Hidden = True
-        Else
-            rCell.EntireRow.Hidden = True
-            Exit Do
-        End If
-    Loop
+' --- Whole-cell match variants ---
+Sub HighlightCellsWithSelectedValueWhole()
+    ActOnSelectedValue "cell", , 65535, xlWhole
+End Sub
+Sub HighlightRowsWithSelectedValueWhole()
+    ActOnSelectedValue "row", 7071982, 65535, xlWhole
+End Sub
+Sub HighlightRowsWithSelectedValueRedWhole()
+    ActOnSelectedValue "row", 13353215, 9662683, xlWhole
+End Sub
+Sub HighlightRowsWithSelectedValueOrangeWhole()
+    ActOnSelectedValue "row", 17919, 42495, xlWhole
+End Sub
+Sub HighlightRowsWithSelectedValueGreenWhole()
+    ActOnSelectedValue "row", 10025880, 15658671, xlWhole
+End Sub
+Sub HighlightRowsWithSelectedValueClearedWhole()
+    ActOnSelectedValue "clear", , , xlWhole
+End Sub
+Sub HideRowsWithSelectedValueWhole()
+    ActOnSelectedValue "hide", , , xlWhole
 End Sub
 
 
@@ -350,15 +362,38 @@ End Sub
 
 
 Sub HighlightDuplicateValuesSelected()
-' HighlightDuplicateValuesSelected Macro - Highlights duplicate values in selected range
-    Dim myRange As Range
+' HighlightDuplicateValuesSelected Macro - Highlights duplicate values in selected range.
+' Two-pass Dictionary implementation (was O(n^2) CountIf-per-cell).
     Dim myCell As Range
-    Set myRange = Selection
-        For Each myCell In myRange
-        If WorksheetFunction.CountIf(myRange, myCell.Value) > 1 Then
+    Dim counts As Object
+    Dim k As String
+
+    If Selection Is Nothing Then Exit Sub
+    Set counts = CreateObject("Scripting.Dictionary")
+
+    On Error GoTo Cleanup
+    Application.ScreenUpdating = False
+
+    ' Pass 1: tally occurrences of each value
+    For Each myCell In Selection.Cells
+        k = CStr(myCell.Value)
+        If counts.Exists(k) Then
+            counts(k) = counts(k) + 1
+        Else
+            counts(k) = 1
+        End If
+    Next myCell
+
+    ' Pass 2: colour cells whose value appears more than once
+    For Each myCell In Selection.Cells
+        If counts(CStr(myCell.Value)) > 1 Then
             myCell.Interior.ColorIndex = 36
         End If
     Next myCell
+
+Cleanup:
+    Application.ScreenUpdating = True
+    If Err.Number <> 0 Then MsgBox "HighlightDuplicateValuesSelected error: " & Err.Description, vbCritical
 End Sub
 
 
@@ -393,6 +428,10 @@ Sub AddFrequencyColumn()
         Exit Sub
     End If
 
+    On Error GoTo Cleanup
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+
     ' Insert a new column to the right
     ws.Columns(colNum + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
 
@@ -424,7 +463,14 @@ Sub AddFrequencyColumn()
     ' Auto-fit the new column
     newCol.AutoFit
 
-    MsgBox "Frequency column added successfully!", vbInformation
+Cleanup:
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+    If Err.Number <> 0 Then
+        MsgBox "AddFrequencyColumn error: " & Err.Description, vbCritical
+    Else
+        MsgBox "Frequency column added successfully!", vbInformation
+    End If
 End Sub
 
 
@@ -527,7 +573,8 @@ End Sub
 Sub DeleteHiddenColumns()
 ' DeleteHiddenColumns Macro - Deletes all hidden columns
     Dim Sheet As Worksheet
-    Dim LastCol As Integer
+    Dim LastCol As Long
+    Dim i As Long
     Set Sheet = ActiveSheet
     LastCol = Sheet.UsedRange.Columns(Sheet.UsedRange.Columns.Count).Column
     For i = LastCol To 1 Step -1
@@ -539,7 +586,8 @@ End Sub
 Sub DeleteHiddenRows()
 ' DeleteHiddenRows Macro - Deletes all hidden rows
     Dim Sheet As Worksheet
-    Dim LastRow As Integer
+    Dim LastRow As Long
+    Dim i As Long
     Set Sheet = ActiveSheet
     LastRow = Sheet.UsedRange.Rows(Sheet.UsedRange.Rows.Count).row
     For i = LastRow To 1 Step -1
@@ -549,17 +597,19 @@ End Sub
 
 
 Sub SplitDateAndTimeToNewColumns()
-' SplitDateAndTimeToNewColumns Macro - Splits selected column with date and time (formatted with a space, like '2025-01-01 04:27am' or '8/24/2023 1:01pm') to new "DateOnly" and "TimeOnly" columns created to the right
-    Dim MyDateTime As Date
+' SplitDateAndTimeToNewColumns Macro - Splits a selected column of date+time values into
+' new "DateOnly" and "TimeOnly" columns to the right. Handles native Excel datetimes and
+' common text formats including ISO 8601 (e.g. '2025-01-01T04:27:00Z', '2025-01-01 04:27am',
+' '8/24/2023 1:01pm'). Rows that cannot be parsed are left blank and counted rather than
+' aborting the whole run.
     Dim SelectedColumn As Range
-    Dim LastRow As Long
-    Dim i As Long
+    Dim LastRow As Long, i As Long, skipped As Long
+    Dim dt As Date
 
-    ' Check if a column is selected
+    ' Check if a range is selected
     On Error Resume Next
     Set SelectedColumn = Selection.EntireColumn
     On Error GoTo 0
-
     If SelectedColumn Is Nothing Then
         MsgBox "Please select a cell in a column containing date and time data.", vbExclamation, "Error"
         Exit Sub
@@ -567,6 +617,13 @@ Sub SplitDateAndTimeToNewColumns()
 
     ' Find the last row in the selected column
     LastRow = Cells(Rows.Count, SelectedColumn.Column).End(xlUp).row
+    If LastRow < 2 Then
+        MsgBox "No data found in the selected column.", vbExclamation
+        Exit Sub
+    End If
+
+    On Error GoTo Cleanup
+    Application.ScreenUpdating = False
 
     ' Insert new columns to the right
     SelectedColumn.Offset(, 1).Insert Shift:=xlToRight
@@ -577,17 +634,68 @@ Sub SplitDateAndTimeToNewColumns()
 
     ' Loop through each row (skip header row)
     For i = 2 To LastRow
-        MyDateTime = SelectedColumn.Cells(i, 1).Value
-
-        ' Extract date and time
-        SelectedColumn.Cells(i, 2).Value = Int(MyDateTime) ' Date
-        SelectedColumn.Cells(i, 3).Value = MyDateTime - Int(MyDateTime) ' Time
-
-        ' Format the new columns
-        SelectedColumn.Cells(i, 2).NumberFormat = "YYYY-MM-DD"
-        SelectedColumn.Cells(i, 3).NumberFormat = "hh:mm:ss"
+        If TryParseDateTime(SelectedColumn.Cells(i, 1).Value, dt) Then
+            SelectedColumn.Cells(i, 2).Value = Int(dt)
+            SelectedColumn.Cells(i, 3).Value = dt - Int(dt)
+            SelectedColumn.Cells(i, 2).NumberFormat = "YYYY-MM-DD"
+            SelectedColumn.Cells(i, 3).NumberFormat = "hh:mm:ss"
+        Else
+            skipped = skipped + 1
+        End If
     Next i
+
+Cleanup:
+    Application.ScreenUpdating = True
+    If Err.Number <> 0 Then
+        MsgBox "SplitDateAndTimeToNewColumns error: " & Err.Description, vbCritical
+    ElseIf skipped > 0 Then
+        MsgBox "Done. " & skipped & " row(s) could not be parsed as date/time and were left blank.", vbInformation
+    End If
 End Sub
+
+
+Private Function TryParseDateTime(ByVal raw As Variant, ByRef dt As Date) As Boolean
+' Attempts to coerce a value to a Date. Handles native serials plus common ISO 8601
+' text (T separator, trailing Z, +/-HH:MM offsets). Returns False if uninterpretable.
+    Dim s As String
+    Dim p As Long, tzPlus As Long, tzMinus As Long, firstColon As Long
+
+    TryParseDateTime = False
+    If IsEmpty(raw) Then Exit Function
+    If IsError(raw) Then Exit Function
+
+    ' Native date or numeric serial
+    If IsDate(raw) Then
+        dt = CDate(raw)
+        TryParseDateTime = True
+        Exit Function
+    End If
+
+    s = Trim(CStr(raw))
+    If Len(s) = 0 Then Exit Function
+
+    ' ISO 8601 normalisation: T -> space, drop trailing Z
+    s = Replace(s, "T", " ")
+    s = Replace(s, "t", " ")
+    If Right(s, 1) = "Z" Or Right(s, 1) = "z" Then s = Left(s, Len(s) - 1)
+    s = Trim(s)
+
+    ' Strip a trailing timezone offset (+HH:MM / -HH:MM) that follows the time portion
+    p = InStr(s, " ")                       ' start of time portion
+    If p > 0 Then
+        tzPlus = InStr(p, s, "+")
+        If tzPlus > 0 Then s = Trim(Left(s, tzPlus - 1))
+        firstColon = InStr(p, s, ":")
+        tzMinus = InStrRev(s, "-")
+        ' a '-' is only an offset if it sits after the first time colon
+        If firstColon > 0 And tzMinus > firstColon Then s = Trim(Left(s, tzMinus - 1))
+    End If
+
+    If IsDate(s) Then
+        dt = CDate(s)
+        TryParseDateTime = True
+    End If
+End Function
 
 
 Sub CheckValueMatch()
