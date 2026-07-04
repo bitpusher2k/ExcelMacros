@@ -40,7 +40,7 @@ Download "LogMacro-Addin.xlam", and either open it directly via double-click (te
 Or to install addin, copy it to usual Excel add-in location:
 Copy-Item -Path '.\LogMacro-Addin.xlam' -Destination "$env:APPDATA\Microsoft\AddIns\" -Force
 
-Remove the Mark of the Web; Right-click "LogMacro-Addin.xlam" > Properties > un-tick Unblock > OK, or from PowerShell with Unblock-File -Path "$env:APPDATA\Microsoft\AddIns\M365-BEC-Macros.xlam"
+Remove the Mark of the Web; Right-click "LogMacro-Addin.xlam" > Properties > un-tick Unblock > OK, or from PowerShell with Unblock-File -Path "$env:APPDATA\Microsoft\AddIns\LogMacro-Addin.xlam"
 
 Then Open Excel and navigate to File > Options > Add-ins > set Manage to Excel Add-ins > Go:
 ![Excel go](ExcelGo.png)
