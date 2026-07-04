@@ -340,22 +340,26 @@ End Sub
 
 
 Sub ConvertSelectedToValues()
-' ConvertSelectedToValues Macro - Converts formulas in selected cells to values
+' Converts formulas in the selected cells to their values (in the ACTIVE workbook)
     Dim myRange As Range
     Dim myCell As Range
-    Select Case _
-        MsgBox("Caution: Action cannot be undone. " _
-        & "Save Workbook First?", vbYesNoCancel, _
-        "Alert")
-        Case Is = vbYes
-            ThisWorkbook.Save
-        Case Is = vbCancel
+
+    ' Only operate on an actual cell selection
+    If TypeName(Selection) <> "Range" Then
+        MsgBox "Select a range of cells first.", vbExclamation, "Nothing to convert"
+        Exit Sub
+    End If
+    Select Case MsgBox("Caution: Action cannot be undone. Save workbook first?", _
+                       vbYesNoCancel, "Alert")
+        Case vbYes
+            ActiveWorkbook.Save
+        Case vbCancel
             Exit Sub
     End Select
     Set myRange = Selection
     For Each myCell In myRange
         If myCell.HasFormula Then
-            myCell.formula = myCell.Value
+            myCell.Formula = myCell.Value
         End If
     Next myCell
 End Sub
