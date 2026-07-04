@@ -29,7 +29,7 @@ LogMacros tab should be available in the ribbon:
 
 Copy/paste CSV data into worksheet to use macros on it.
 
-If you encounter errors, remove the Mark of the Web; Right-click "LogMacro-Workbook.xlsm" > Properties > un-tick Unblock > OK, or from PowerShell with "Unblock-File -Path ".\LogMacro-Workbook.xlsm"
+If you encounter errors, remove the Mark of the Web; Right-click "LogMacro-Workbook.xlsm" > Properties > un-tick Unblock > OK, or from PowerShell with Unblock-File -Path ".\LogMacro-Workbook.xlsm"
 
 
 # To use Excel macros from addin (allows macros to be available to all worksheets while open/installed, already has ribbon buttons mapped, requires trust, remove MotW):
@@ -169,7 +169,7 @@ Screenshot of customized Calc ribbon buttons:
 * HighlightDuplicateValuesSelected - Highlights duplicate values in selected range of cells.
 * CheckValueMatch - Compares each row of one highlighted column with values in second highlighted column and if there is a match marks "true" in a new column to the right of second column - Used for manually combining results of queries into one CSV
 * AddFrequencyColumn - Creates new column to the right of selected which contains frequency of values from selected column.
-* SaveWorkshetAsPDF - Saves current worksheet as PDF.
+* SaveWorksheetAsPDF - Saves current worksheet as PDF.
 * SaveWorksheetAsXLSX - Saves current worksheet as XLSX with same path & filename as open file. Handy when processing CSV files - faster than pressing F12 > clicking Drop-down menu > clicking XLSX > clicking Save.
 * ClearAllHighlighting - Clears all highlighting in the worksheet (reverts changes made by the "HighlightRowsWithSelectedValue" and "HighlightDuplicateValuesSelected" macros).
 * UnhideAllRowsColumns - Un-hides all rows and columns (reverts changes made by the "HideEmptyColumns" and "HideGuidColumns" macros).
@@ -223,6 +223,8 @@ Screenshot of customized Calc ribbon buttons:
 | `ColumnIndexToLetter()` | Converts 0-based column index to letter(s) (A, B, …, Z, AA, …) |
 | `HighlightRowsByValue()` | Shared implementation for all row-highlighting macros |
 | `RemoveSheetFilterIfActive()` | Clears any active sheet filter (equivalent to `ShowAllData`) |
+| `LastInStr()` | Returns the position of the last occurrence of a substring (used by datetime parsing) |
+| `TryParseCalcDateTime()` | Parses native and ISO 8601 datetime text; returns a success flag |
 
 
 ### Color Conversion Note

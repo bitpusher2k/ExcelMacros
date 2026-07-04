@@ -275,7 +275,7 @@ Sub HighlightRowsWithSelectedValueGreen()
 ' Row PaleGreen, cell PaleTurquoise
     ActOnSelectedValue "row", 10025880, 15658671, xlPart
 End Sub
-Sub HighlightRowsWithSelectedValueCleared()
+Sub ClearHighlightRowsWithSelectedValue()
 ' Clears highlighting on rows containing the selected value
     ActOnSelectedValue "clear", , , xlPart
 End Sub
@@ -300,7 +300,7 @@ End Sub
 Sub HighlightRowsWithSelectedValueGreenWhole()
     ActOnSelectedValue "row", 10025880, 15658671, xlWhole
 End Sub
-Sub HighlightRowsWithSelectedValueClearedWhole()
+Sub ClearHighlightRowsWithSelectedValueWhole()
     ActOnSelectedValue "clear", , , xlWhole
 End Sub
 Sub HideRowsWithSelectedValueWhole()
@@ -478,8 +478,8 @@ Cleanup:
 End Sub
 
 
-Sub SaveWorkshetAsPDF()
-' SaveWorkshetAsPDF Macro - Saves current worksheet as PDF
+Sub SaveWorksheetAsPDF()
+' SaveWorksheetAsPDF Macro - Saves current worksheet as PDF
     Dim wsA As Worksheet
     Dim wbA As Workbook
     Dim strTime As String
