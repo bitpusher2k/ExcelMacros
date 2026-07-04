@@ -22,9 +22,11 @@ https://github.com/bitpusher2k
 # To try out Excel macros in a single worksheet (requires trust in embedded macros, remove MotW):
 
 Download "LogMacro-Workbook.xlsm", Open it, enable macro content if prompted:
+
 ![Trust worksheet](TrustWorksheet.png)
 
 LogMacros tab should be available in the ribbon:
+
 ![Log Macros ribbon](LogMacros.png)
 
 Copy/paste CSV data into worksheet to use macros on it.
@@ -35,6 +37,7 @@ If you encounter errors, remove the Mark of the Web; Right-click "LogMacro-Workb
 # To use Excel macros from addin (allows macros to be available to all worksheets while open/installed, already has ribbon buttons mapped, requires trust, remove MotW):
 
 Download "LogMacro-Addin.xlam", and either open it directly via double-click (temporary use) and trust if prompted:
+
 ![Trust add-in](TrustAddin.png)
 
 Or to install addin, copy it to usual Excel add-in location:
@@ -43,16 +46,19 @@ Copy-Item -Path '.\LogMacro-Addin.xlam' -Destination "$env:APPDATA\Microsoft\Add
 Remove the Mark of the Web; Right-click "LogMacro-Addin.xlam" > Properties > un-tick Unblock > OK, or from PowerShell with Unblock-File -Path "$env:APPDATA\Microsoft\AddIns\LogMacro-Addin.xlam"
 
 Then Open Excel and navigate to File > Options > Add-ins > set Manage to Excel Add-ins > Go:
+
 ![Excel go](ExcelGo.png)
 
-
 Click Browse, select the "LogMacro-Addin.xlam" file:
+
 ![Click Browse](AddinsBrowse.png)
 
 Click "Yes" to copy it to the Add-ins folder, and make sure it's ticked in Add-ins pane:
+
 ![Addins Ok](AddinsOk.png)
 
 LogMacros tab should be available in the ribbon; Enable Content if prompted:
+
 ![Log Macros ribbon](LogMacros.png)
 
 To uninstall, untick it in that same Add-ins dialog.
@@ -89,12 +95,15 @@ Add desired macros as buttons to the ribbon:
 
 
 Screenshot of Excel customization pane:
+
 ![Customize](Customize.png)
 
 Screenshot of customized Excel ribbon buttons:
+
 ![Ribbon](Ribbon.png)
 
 And if screen is not quite as wide it gets compressed:
+
 ![Ribbon](RibbonShorter.png)
 
 
