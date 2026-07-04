@@ -19,7 +19,46 @@ https://github.com/bitpusher2k
 ### Scripts provided as-is. Use at your own risk. No guarantees or warranty provided.
 
 
-# To use Excel set:
+# To try out Excel macros in a single worksheet (requires trust in embedded macros, remove MotW):
+
+Download "LogMacro-Workbook.xlsm", Open it, enable macro content if prompted:
+![Trust worksheet](TrustWorksheet.png)
+
+LogMacros tab should be available in the ribbon:
+![Log Macros ribbon](LogMacros.png)
+
+Copy/paste CSV data into worksheet to use macros on it.
+
+If you encounter errors, remove the Mark of the Web; Right-click "LogMacro-Workbook.xlsm" > Properties > un-tick Unblock > OK, or from PowerShell with "Unblock-File -Path ".\LogMacro-Workbook.xlsm"
+
+
+# To use Excel macros from addin (allows macros to be available to all worksheets while open/installed, already has ribbon buttons mapped, requires trust, remove MotW):
+
+Download "LogMacro-Addin.xlam", and either open it directly via double-click (temporary use) and trust if prompted:
+![Trust add-in](TrustAddin.png)
+
+Or to install addin, copy it to usual Excel add-in location:
+Copy-Item -Path '.\LogMacro-Addin.xlam' -Destination "$env:APPDATA\Microsoft\AddIns\" -Force
+
+Remove the Mark of the Web; Right-click "LogMacro-Addin.xlam" > Properties > un-tick Unblock > OK, or from PowerShell with Unblock-File -Path "$env:APPDATA\Microsoft\AddIns\M365-BEC-Macros.xlam"
+
+Then Open Excel and navigate to File > Options > Add-ins > set Manage to Excel Add-ins > Go:
+![Excel go](ExcelGo.png)
+
+
+Click Browse, select the "LogMacro-Addin.xlam" file:
+![Click Browse](AddinsBrowse.png)
+
+Click "Yes" to copy it to the Add-ins folder, and make sure it's ticked in Add-ins pane:
+![Addins Ok](AddinsOk.png)
+
+LogMacros tab should be available in the ribbon; Enable Content if prompted:
+![Log Macros ribbon](LogMacros.png)
+
+To uninstall, untick it in that same Add-ins dialog.
+
+
+# To use Excel set from PERSONAL.XLSB (available to all Excel sessions, full control and review of code/icons/names as you create them):
 
 Activate "Developer" tab in Excel to enable macro manipulation:
 * https://support.microsoft.com/en-us/office/show-the-developer-tab-e1192344-5e56-4d45-931b-e5fd9bea2d45
@@ -68,7 +107,7 @@ If PERSONAL.XLSB cannot be loaded from default location a custom location can be
 Method 1: Paste into My Macros (recommended - available to all documents)
 
 * Open LibreOffice Calc
-* Go to Tools > Macros > Organize Macros > LibreOffice Basic
+* Go to Tools > Macros > Organize Macros > Basic
 * Expand My Macros & Dialogs > Standard
 * Select Module1 (or create a new module)
 * Click Edit to open the Basic IDE
