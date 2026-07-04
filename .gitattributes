@@ -1,0 +1,12 @@
+# Normalize line endings: store LF in the repo, check out CRLF on Windows
+* text=auto eol=crlf
+*.bas text eol=crlf
+*.vba text eol=crlf
+*.md  text eol=crlf
+
+# Binary assets
+*.xlam binary
+*.xlsm binary
+*.xlsb binary
+*.ods  binary
+*.png  binary
